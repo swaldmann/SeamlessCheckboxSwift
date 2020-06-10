@@ -21,6 +21,10 @@ class MyViewController : UIViewController {
     let borderWidth = CGFloat(10)
     let numberOfSegments = 6
     
+    // The 6 bezier curves allow for 1, 2, 3 or 6 different colors since 6 mod {1,2,3,6} = 0.
+    let borderColors = [UIColor.systemGray2]
+    //let borderColors = [UIColor.systemYellow, .systemRed, .systemOrange]
+    
     // See https://stackoverflow.com/a/27863181
     // We are starting at the top center
     func pointOnCircle(radius: CGFloat, Θ: CGFloat, transform: CGFloat = 0) -> CGPoint {
@@ -194,7 +198,7 @@ class MyViewController : UIViewController {
             let p6 = CGPoint(x: p5.x + thickness * 2 * α, y: p5.y + (thickness * 2 * α) * gradient1)
             let arr = [p1, p2, p3, p4, p5, p6]
             
-            // The 6 bezier curves allow for 1, 2, 3 or 6 different colors since 6 mod {1,2,3,6} = 0.
+            // Debug
             /*let colors = [UIColor.green, .cyan, .blue, .brown, .red, .purple]
             arr.enumerated().forEach { (i, point) in
                 let color = colors[i]
@@ -217,7 +221,7 @@ class MyViewController : UIViewController {
             subView.layer.addSublayer(checkboxLayer)
         }
         
-        let color = isChecked ? UIColor.systemGreen.cgColor : UIColor.systemGray2.cgColor
+        let color = isChecked ? UIColor.systemGreen.cgColor : borderColors[Int(segment/(numberOfSegments/borderColors.count))].cgColor
         let index = segment % numberOfSegments
         let layer = segmentLayers[index]
         layer.fillColor = color
@@ -225,7 +229,7 @@ class MyViewController : UIViewController {
         layer.strokeColor = color
         layer.path = path.cgPath
         
-        // MARK: Debug
+        // Debug
 //        drawCircle(point: startOuterPoint, color: .blue)
 //        drawCircle(point: endOuterPoint, color: .blue)
 //        drawLine(tangentPoint: startOuterPoint, slope: slope)
