@@ -5,9 +5,14 @@ import PlaygroundSupport
 
 class MyViewController : UIViewController {
     
-    var panGestureRecognizer: UIGestureRecognizer!
+    var tapGestureRecognizer: UITapGestureRecognizer!
+    // UIPanGestureRecognizer for an experimental "parallax"-like perspective skew
+    // when dragging the checkbox before lifting the finger/click. Behavior is still
+    // funky since the checkbox's anchor point is not its center.
+    // var panGestureRecognizer: UIGestureRecognizer!
     
-    var checked: Bool = false
+    var isChecked: Bool = false
+    
     var segmentLayers = [CAShapeLayer]()
     let containerView = UIView(frame: CGRect(x: 150, y: 150, width: 100, height: 100))
     let subView = UIView(frame: .zero)
@@ -72,26 +77,29 @@ class MyViewController : UIViewController {
     }
     
     override func loadView() {
-        
-         
         let view = UIView()
         containerView.backgroundColor = .white
         view.backgroundColor = .white
         view.addSubview(containerView)
         containerView.addSubview(subView)
         
-        panGestureRecognizer = UIPanGestureRecognizer(target: self, action: #selector(pan(_:)))
-        containerView.addGestureRecognizer(panGestureRecognizer)
+        tapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(tap(_:)))
+        containerView.addGestureRecognizer(tapGestureRecognizer)
+        //panGestureRecognizer = UIPanGestureRecognizer(target: self, action: #selector(pan(_:)))
+        //containerView.addGestureRecognizer(panGestureRecognizer)
         
-        (0...5).forEach { drawSegment(segment: $0, checked: checked) }
+        (0...5).forEach { drawSegment(segment: $0, isChecked: isChecked) }
         
         self.view = view
     }
     
-    var circle: CAShapeLayer!
-    
     func sigmoid(_ x: CGFloat) -> CGFloat {
-        return 1/(1+exp(-x)) * 2
+        return 1/(1 + exp(-x))
+    }
+    
+    @objc func tap(_ gestureRecognizer: UITapGestureRecognizer) {
+        morph(isChecked: isChecked)
+        isChecked = !isChecked
     }
     
     @objc func pan(_ gestureRecognizer: UIPanGestureRecognizer) {
@@ -102,23 +110,22 @@ class MyViewController : UIViewController {
         let height = containerView.frame.size.height
         let width = containerView.frame.size.width
         
-        let deltaX = sigmoid((point.x - centerX)/width) - 0.5
-        let deltaY = sigmoid((point.y - centerY)/height) - 0.5
+        let deltaX = sigmoid((point.x - centerX)/width) * 2 - 0.5
+        let deltaY = sigmoid((point.y - centerY)/height) * 2 - 0.5
 
         switch gestureRecognizer.state {
         case .began:
             break
         case .changed:
             let transform = CGAffineTransform(a: 1, b: deltaY * 0.05, c: deltaX * 0.05, d: 1, tx: 0, ty: 0)
-            //let transform = CGAffineTransform(translationX: deltaX, y: deltaY)
             subView.transform = transform
         case .ended:
             UIView.animate(withDuration: 0.2) {
                 self.subView.transform = .identity
             }
             
-            self.morph(checked: !self.checked)
-            self.checked = !self.checked
+            morph(isChecked: !isChecked)
+            isChecked = !isChecked
         default:
             break
         }
@@ -130,8 +137,7 @@ class MyViewController : UIViewController {
         return CGFloat(sqrt(xDist * xDist + yDist * yDist))
     }
     
-    
-    func drawSegment(segment: Int, checked: Bool) {
+    func drawSegment(segment: Int, isChecked: Bool) {
         let distance = optimalDistance(n: numberOfSegments) * radius
         let innerDistance = optimalDistance(n: numberOfSegments) * (radius - borderWidth)
         let path = UIBezierPath()
@@ -154,7 +160,7 @@ class MyViewController : UIViewController {
 
         path.addCurve(to: endOuterPoint, controlPoint1: controlPoint1, controlPoint2: controlPoint2)
         
-        if !checked {
+        if !isChecked {
             let endInnerPoint = pointOnCircle(radius: innerRadius, Θ: endΘ, transform: borderWidth)
             path.addLine(to: endInnerPoint)
 
@@ -169,6 +175,7 @@ class MyViewController : UIViewController {
             path.addLine(to: startOuterPoint)
         }
         else {
+            // The checkmark dimensions are hardcoded, but grow with the checkbox's size.
             let gradient1: CGFloat = 0.6666666
             let gradient2: CGFloat = -1/gradient1
             
@@ -186,11 +193,14 @@ class MyViewController : UIViewController {
             let p5 = CGPoint(x: p4.x + thickness * γ, y: p4.y + (thickness * γ) * gradient2)
             let p6 = CGPoint(x: p5.x + thickness * 2 * α, y: p5.y + (thickness * 2 * α) * gradient1)
             let arr = [p1, p2, p3, p4, p5, p6]
+            
+            // The 6 bezier curves allow for 1, 2, 3 or 6 different colors since 6 mod {1,2,3,6} = 0.
             /*let colors = [UIColor.green, .cyan, .blue, .brown, .red, .purple]
             arr.enumerated().forEach { (i, point) in
                 let color = colors[i]
                 drawCircle(point: point, color: color)
             }*/
+            
             let index1 = segment % numberOfSegments
             let point1 = arr[index1]
             let index2 = (segment + 1) % numberOfSegments
@@ -207,7 +217,7 @@ class MyViewController : UIViewController {
             subView.layer.addSublayer(checkboxLayer)
         }
         
-        let color = checked ? UIColor.systemGreen.cgColor : UIColor.systemGray2.cgColor
+        let color = isChecked ? UIColor.systemGreen.cgColor : UIColor.systemGray2.cgColor
         let index = segment % numberOfSegments
         let layer = segmentLayers[index]
         layer.fillColor = color
@@ -229,12 +239,9 @@ class MyViewController : UIViewController {
 //        drawLine(tangentPoint: startInnerPoint, slope: slope4)
 //        drawCircle(point: controlPoint3, color: .red)
 //        drawCircle(point: controlPoint4, color: .orange)
-        
-        
     }
-
     
-    func morph(checked: Bool) {
+    func morph(isChecked: Bool) {
         let animation = CABasicAnimation()
         animation.keyPath = "path"
         //animation.duration = 0.8
@@ -243,13 +250,12 @@ class MyViewController : UIViewController {
         animation.timingFunction = CAMediaTimingFunction(controlPoints: 0.04, 0.17, 0.29, 0.95)
         animation.isRemovedOnCompletion = false
         for (i, layer) in segmentLayers.enumerated() {
-            animation.fromValue = drawSegment(segment: i, checked: checked)
-            animation.toValue = drawSegment(segment: i, checked: checked)
+            animation.fromValue = drawSegment(segment: i, isChecked: isChecked)
+            animation.toValue = drawSegment(segment: i, isChecked: isChecked)
             layer.add(animation, forKey: "morph")
         }
         subView.setNeedsDisplay()
     }
-    
 }
 
 // Present the view controller in the Live View window
