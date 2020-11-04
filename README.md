@@ -1,6 +1,6 @@
 # SeamlessCheckboxSwift
 
-A quick-and-dirty, badly documented experiment to test a seamless, cancellable animation between checkbox states.
+A quick-and-dirty, badly documented experiment to test a seamless, cancellable animation between checkbox states. We're approximating circular arcs from cubic Bézier curves to allow for implicit point translations.
 
 <img src="https://user-images.githubusercontent.com/24377039/84717061-1c5b4780-af75-11ea-9417-8a0ea804f6c1.gif" width="150" height="150"/>
 
