@@ -25,7 +25,6 @@ class MyViewController : UIViewController {
     let borderColors = [UIColor.systemGray2]
     //let borderColors = [UIColor.systemYellow, .systemRed, .systemOrange]
     
-    // See https://stackoverflow.com/a/27863181
     // We are starting at the top center
     func pointOnCircle(radius: CGFloat, Θ: CGFloat, transform: CGFloat = 0) -> CGPoint {
         // Top center point (s,t) = (radius, 0)
